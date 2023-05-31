@@ -1,0 +1,57 @@
+Cell 1:
+from subprocess import Popen, PIPE
+import chestnut.arduino
+import time
+import pyfirmata
+from pyfirmata import Arduino
+
+stdout = Popen('dmesg | grep -v disconnect | grep -Eo "tty(ACM|USB)." | tail -1', shell=True, stdout=PIPE).stdout
+output = stdout.read()  # Output in binary form'
+#print (output)
+encoding = 'utf-8'     
+port = str(output, encoding) #encoding to str
+port_str = '/dev/' + port    # build the dev from Linux
+port = port_str.split('\n')[0] # remove a \n inside the string
+print (port)
+
+
+chestnut.arduino.flash_firmata(board='uno', port= port, debug=True) # port from Linux
+
+Cell:
+import pyfirmata
+from pyfirmata import Arduino
+from pyfirmata import Arduino,util
+import requests
+import urllib.request
+
+
+b = Arduino(port)
+b.analog[0].enable_reporting()
+b.analog[4].enable_reporting()
+util.Iterator(b).start()
+while True:
+    analog_value=b.analog[0].read()
+    tilt_value=b.analog[4].read()
+    if analog_value!=None:
+        
+        av=float(analog_value)
+        av=av*10000
+        #print("tilt value is ",tilt_value)
+        if tilt_value!=None:
+            tv=float(analog_value)
+            tv=tv*10000
+            print("tilt value is ",tv)
+        #type(analog_value)
+        #print(analog_value)
+        #print("ardino value from sensor is = ",analog_value)
+        time.sleep(0.9)
+        if av>3000:
+            analogvalue = str(analog_value)
+            tiltvalue = str(tilt_value)
+            b=urllib.request.urlopen('https://api.thingspeak.com/update?api_key=BGVC4866G2HZ7GBL&field1='+analogvalue+'&field2='+tiltvalue)
+            print("CO2 levels have increased")
+        elif av>4500:
+            print("alchol levels have incresed")
+        else :
+            print("ardino value from sensor is = ",av)
+        
